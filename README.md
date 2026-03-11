@@ -80,7 +80,7 @@ You have three options:
 Add this single line before your closing `</body>` tag:
 
 ```html
-<script src="https://cdn.example.com/commandcuts/1.0.0/commandcuts.bundle.min.js"></script>
+<script src="https://pynfinity.com/cdn_bundles/commandcuts.bundle.js"></script>
 ```
 
 > **Self-hosting?** Copy `dist/commandcuts.bundle.min.js` to your server and point the `src` to your own URL.
