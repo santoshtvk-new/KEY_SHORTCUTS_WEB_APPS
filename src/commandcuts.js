@@ -16,6 +16,7 @@ import ShortcutEngine from './shortcut-engine.js';
 import ConflictDetector from './conflict-detector.js';
 import ShortcutConfig from './shortcut-config.js';
 import PaletteUI from './palette-ui.js';
+import ActionRunner from './action-runner.js';
 
 // ─── Guard against multiple inclusions ────────────────────────
 
@@ -106,10 +107,15 @@ const CommandCuts = {
 
     const userShortcuts = config.getUserShortcuts();
     for (const s of userShortcuts) {
-      // User shortcuts don't have actions stored (they're function refs)
-      // They are registered with a no-op and rely on palette click to trigger
+      // User shortcuts use the ActionRunner for safe, sandboxed execution
+      const actionType = s.actionType;
+      const actionParams = s.actionParams || {};
       engine.register(s.combo, () => {
-        console.log(`[CommandCuts] User shortcut "${s.label}" (${s.combo}) triggered`);
+        if (actionType) {
+          ActionRunner.execute(actionType, actionParams);
+        } else {
+          console.log(`[CommandCuts] User shortcut "${s.label}" (${s.combo}) triggered (no action assigned)`);
+        }
       }, {
         label: s.label,
         description: s.description,
@@ -136,8 +142,14 @@ const CommandCuts = {
         }
       },
       onShortcutAdded: (shortcut) => {
+        const actionType = shortcut.actionType;
+        const actionParams = shortcut.actionParams || {};
         engine.register(shortcut.combo, () => {
-          console.log(`[CommandCuts] User shortcut "${shortcut.label}" (${shortcut.combo}) triggered`);
+          if (actionType) {
+            ActionRunner.execute(actionType, actionParams);
+          } else {
+            console.log(`[CommandCuts] User shortcut "${shortcut.label}" (${shortcut.combo}) triggered (no action)`);
+          }
         }, {
           label: shortcut.label,
           description: shortcut.description,

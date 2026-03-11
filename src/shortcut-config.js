@@ -13,7 +13,7 @@ class ShortcutConfig {
     this._storageKey = storageKey;
     /** @type {Array<{combo: string, label: string, description: string, icon: string, category: string, adminLocked: boolean}>} */
     this._adminShortcuts = [];
-    /** @type {Array<{combo: string, label: string, description: string, icon: string, category: string}>} */
+    /** @type {Array<{combo: string, label: string, description: string, icon: string, category: string, actionType: string, actionParams: Object}>} */
     this._userShortcuts = [];
 
     this._loadFromStorage();
@@ -64,6 +64,8 @@ class ShortcutConfig {
       description: shortcut.description || '',
       icon: shortcut.icon || '✏️',
       category: shortcut.category || 'Custom',
+      actionType: shortcut.actionType || '',
+      actionParams: shortcut.actionParams || {},
     });
 
     this._saveToStorage();
@@ -98,6 +100,8 @@ class ShortcutConfig {
     if (updates.description !== undefined) shortcut.description = updates.description;
     if (updates.icon) shortcut.icon = updates.icon;
     if (updates.category) shortcut.category = updates.category;
+    if (updates.actionType !== undefined) shortcut.actionType = updates.actionType;
+    if (updates.actionParams !== undefined) shortcut.actionParams = updates.actionParams;
 
     this._saveToStorage();
     return true;

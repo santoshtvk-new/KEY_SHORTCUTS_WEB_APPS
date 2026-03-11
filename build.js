@@ -21,6 +21,7 @@ const SOURCE_FILES = [
   'conflict-detector.js',
   'shortcut-config.js',
   'palette-search.js',
+  'action-runner.js',
   'palette-ui.js',
   'commandcuts.js',
 ];

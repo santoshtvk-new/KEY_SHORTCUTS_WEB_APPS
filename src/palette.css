@@ -465,12 +465,16 @@
 
 .cc-modal {
   width: 90%;
-  max-width: 380px;
+  max-width: 420px;
+  max-height: 85vh;
+  overflow-y: auto;
   background: var(--cc-bg-solid);
   border: 1px solid var(--cc-border);
   border-radius: var(--cc-radius-sm);
   padding: 24px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
 }
 
 .cc-modal-title {
@@ -513,6 +517,31 @@
 
 .cc-field-input::placeholder {
   color: var(--cc-text-muted);
+}
+
+/* Action select dropdown */
+.cc-action-select {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.cc-action-select option {
+  background: var(--cc-bg-solid);
+  color: var(--cc-text);
+  padding: 8px;
+}
+
+.cc-action-description {
+  margin-top: 4px;
+}
+
+.cc-action-params {
+  margin-bottom: 4px;
 }
 
 /* Key recorder */

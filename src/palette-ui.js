@@ -7,6 +7,7 @@
  */
 
 import PaletteSearch from './palette-search.js';
+import ActionRunner from './action-runner.js';
 
 class PaletteUI {
   /**
@@ -28,6 +29,7 @@ class PaletteUI {
     this._recording = false;
     this._recordedCombo = '';
     this._editingCombo = null;
+    this._selectedActionType = '';
     this._onShortcutExecute = deps.onShortcutExecute || (() => {});
     this._onShortcutAdded = deps.onShortcutAdded || (() => {});
     this._onShortcutRemoved = deps.onShortcutRemoved || (() => {});
@@ -120,6 +122,16 @@ class PaletteUI {
               <div id="cc-conflict-area"></div>
             </div>
 
+            <div class="cc-field">
+              <label class="cc-field-label">Action — What should this shortcut do?</label>
+              <select class="cc-field-input cc-action-select" id="cc-action-select">
+                <option value="">Select an action…</option>
+              </select>
+              <div class="cc-action-description" id="cc-action-description"></div>
+            </div>
+
+            <div id="cc-action-params" class="cc-action-params"></div>
+
             <div class="cc-modal-actions">
               <button class="cc-btn cc-btn-secondary" id="cc-modal-cancel">Cancel</button>
               <button class="cc-btn cc-btn-primary" id="cc-modal-save" disabled>Save Shortcut</button>
@@ -153,6 +165,9 @@ class PaletteUI {
   get _fieldDesc() { return this.shadow.getElementById('cc-field-desc'); }
   get _keyRecorder() { return this.shadow.getElementById('cc-key-recorder'); }
   get _conflictArea() { return this.shadow.getElementById('cc-conflict-area'); }
+  get _actionSelect() { return this.shadow.getElementById('cc-action-select'); }
+  get _actionDescription() { return this.shadow.getElementById('cc-action-description'); }
+  get _actionParamsContainer() { return this.shadow.getElementById('cc-action-params'); }
   get _modalCancel() { return this.shadow.getElementById('cc-modal-cancel'); }
   get _modalSave() { return this.shadow.getElementById('cc-modal-save'); }
   get _toast() { return this.shadow.getElementById('cc-toast'); }
@@ -193,6 +208,12 @@ class PaletteUI {
     this._modalOverlay.addEventListener('click', (e) => {
       if (e.target === this._modalOverlay) this._closeModal();
     });
+
+    // Action select change handler
+    this._actionSelect.addEventListener('change', () => this._onActionSelectChange());
+
+    // Populate action select dropdown
+    this._populateActionSelect();
   }
 
   // ─── Open / Close ─────────────────────────────────────────────
@@ -402,12 +423,24 @@ class PaletteUI {
         this._fieldDesc.value = shortcut.description || '';
         this._recordedCombo = shortcut.combo;
         this._keyRecorder.innerHTML = this._renderRecordedKeys(shortcut.combo);
+        // Restore action selection
+        if (shortcut.actionType) {
+          this._actionSelect.value = shortcut.actionType;
+          this._selectedActionType = shortcut.actionType;
+          this._onActionSelectChange();
+          // Populate saved params
+          this._restoreActionParams(shortcut.actionParams || {});
+        }
       }
     } else {
       this._modalTitle.textContent = 'Add New Shortcut';
       this._fieldLabel.value = '';
       this._fieldDesc.value = '';
       this._keyRecorder.textContent = 'Press keys…';
+      this._actionSelect.value = '';
+      this._selectedActionType = '';
+      this._actionDescription.innerHTML = '';
+      this._actionParamsContainer.innerHTML = '';
     }
 
     this._conflictArea.innerHTML = '';
@@ -422,6 +455,7 @@ class PaletteUI {
     this._recording = false;
     this._editingCombo = null;
     this._recordedCombo = '';
+    this._selectedActionType = '';
   }
 
   // ─── Key Recording ────────────────────────────────────────────
@@ -490,12 +524,13 @@ class PaletteUI {
   _updateSaveButton() {
     const hasLabel = (this._fieldLabel?.value || '').trim().length > 0;
     const hasCombo = this._recordedCombo.length > 0;
+    const hasAction = !!this._selectedActionType;
     const conflict = this.detector.check(this._recordedCombo);
     const isBlocked = conflict.highestSeverity === 'blocked';
 
     const saveBtn = this._modalSave;
     if (saveBtn) {
-      saveBtn.disabled = !(hasLabel && hasCombo && !isBlocked);
+      saveBtn.disabled = !(hasLabel && hasCombo && hasAction && !isBlocked);
     }
   }
 
@@ -505,23 +540,38 @@ class PaletteUI {
     const label = (this._fieldLabel?.value || '').trim();
     const description = (this._fieldDesc?.value || '').trim();
     const combo = this._recordedCombo;
+    const actionType = this._selectedActionType;
+    const actionParams = this._collectActionParams();
 
-    if (!label || !combo) return;
+    if (!label || !combo || !actionType) return;
+
+    // Validate action params
+    const template = ActionRunner.getTemplate(actionType);
+    if (template && template.validate) {
+      const error = template.validate(actionParams);
+      if (error) {
+        this._showToast(error, 'error');
+        return;
+      }
+    }
+
+    // Get icon from template
+    const icon = template ? template.icon : '✏️';
 
     if (this._editingCombo) {
       // Update existing
-      this.config.updateUserShortcut(this._editingCombo, { combo, label, description });
+      this.config.updateUserShortcut(this._editingCombo, { combo, label, description, actionType, actionParams, icon });
       this._onShortcutRemoved(this._editingCombo);
-      this._onShortcutAdded({ combo, label, description });
+      this._onShortcutAdded({ combo, label, description, actionType, actionParams, icon });
       this._showToast('Shortcut updated ✨', 'success');
     } else {
       // Add new
-      const ok = this.config.addUserShortcut({ combo, label, description });
+      const ok = this.config.addUserShortcut({ combo, label, description, actionType, actionParams, icon });
       if (!ok) {
         this._showToast('Shortcut combo already exists', 'error');
         return;
       }
-      this._onShortcutAdded({ combo, label, description });
+      this._onShortcutAdded({ combo, label, description, actionType, actionParams, icon });
       this._showToast('Shortcut added ✨', 'success');
     }
 
@@ -568,6 +618,96 @@ class PaletteUI {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  }
+
+  // ─── Action Template System ───────────────────────────────────
+
+  /** Populate the action select dropdown with all available templates */
+  _populateActionSelect() {
+    const select = this._actionSelect;
+    if (!select) return;
+
+    const templates = ActionRunner.getTemplates();
+    for (const t of templates) {
+      const opt = document.createElement('option');
+      opt.value = t.id;
+      opt.textContent = `${t.icon}  ${t.label}`;
+      select.appendChild(opt);
+    }
+  }
+
+  /** Handle action type selection change */
+  _onActionSelectChange() {
+    const actionId = this._actionSelect.value;
+    this._selectedActionType = actionId;
+
+    const template = ActionRunner.getTemplate(actionId);
+    const descEl = this._actionDescription;
+    const paramsEl = this._actionParamsContainer;
+
+    if (!template) {
+      descEl.innerHTML = '';
+      paramsEl.innerHTML = '';
+      this._updateSaveButton();
+      return;
+    }
+
+    // Show description
+    descEl.innerHTML = `<div style="font-size:12px;color:var(--cc-text-muted);margin-top:6px;">${this._escapeHtml(template.description)}</div>`;
+
+    // Render parameter fields
+    if (template.params && template.params.length > 0) {
+      paramsEl.innerHTML = template.params.map(p => `
+        <div class="cc-field">
+          <label class="cc-field-label">${this._escapeHtml(p.label)}${p.required ? ' *' : ''}</label>
+          <input
+            type="${p.type || 'text'}"
+            class="cc-field-input cc-action-param"
+            data-param-key="${this._escapeHtml(p.key)}"
+            placeholder="${this._escapeHtml(p.placeholder || '')}"
+            ${p.required ? 'required' : ''}
+          />
+        </div>
+      `).join('');
+
+      // Listen for input on params to update save button
+      paramsEl.querySelectorAll('.cc-action-param').forEach(input => {
+        input.addEventListener('input', () => this._updateSaveButton());
+      });
+    } else {
+      paramsEl.innerHTML = '<div style="font-size:12px;color:var(--cc-success);margin-top:4px;">✅ No additional setup needed — just save!</div>';
+    }
+
+    this._updateSaveButton();
+  }
+
+  /** Collect values from the dynamic action param fields */
+  _collectActionParams() {
+    const params = {};
+    const paramsEl = this._actionParamsContainer;
+    if (!paramsEl) return params;
+
+    paramsEl.querySelectorAll('.cc-action-param').forEach(input => {
+      const key = input.dataset.paramKey;
+      if (key) {
+        params[key] = input.value;
+      }
+    });
+
+    return params;
+  }
+
+  /** Restore saved param values when editing a shortcut */
+  _restoreActionParams(savedParams) {
+    const paramsEl = this._actionParamsContainer;
+    if (!paramsEl || !savedParams) return;
+
+    paramsEl.querySelectorAll('.cc-action-param').forEach(input => {
+      const key = input.dataset.paramKey;
+      if (key && savedParams[key] !== undefined) {
+        input.value = savedParams[key];
+      }
+    });
   }
 
   // ─── Cleanup ──────────────────────────────────────────────────

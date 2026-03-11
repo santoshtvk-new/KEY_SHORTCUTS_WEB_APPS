@@ -466,9 +466,35 @@ You can also **click** any shortcut row with your mouse to trigger it.
    - ✅ **Green "Available"** — You're good to go!
    - ⚠️ **Yellow warning** — The combo is used by your browser; it may not work reliably
    - ⛔ **Red "Blocked"** — The combo is reserved by your OS/browser and **cannot** be used
-5. Click **"Save Shortcut"**
+5. **Choose an Action** — Select what the shortcut should *do* from the dropdown:
+   - After selecting an action type, additional fields may appear (e.g. a URL input for "Navigate to URL")
+   - Fill in any required fields (marked with *)
+6. Click **"Save Shortcut"**
 
-Your shortcut is now saved and will appear in the palette!
+Your shortcut is now saved, will appear in the palette, and **actually works** — pressing the key combo will execute the action you chose!
+
+### Available Action Types
+
+These are the safe, pre-built actions you can assign to your custom shortcuts:
+
+| Action | Icon | What it does | Needs setup? |
+|--------|------|-------------|--------------|
+| **Navigate to URL** | 🔗 | Go to a page on this website | Yes — enter the page path (e.g. `/about`) |
+| **Open URL in New Tab** | 🌐 | Open a link in a new browser tab | Yes — enter the full URL |
+| **Scroll to Top** | ⬆️ | Smoothly scroll to the top of the page | No |
+| **Scroll to Bottom** | ⬇️ | Smoothly scroll to the bottom of the page | No |
+| **Scroll to Section** | 📍 | Scroll to a specific section by its ID | Yes — enter the section ID (e.g. `#features`) |
+| **Click a Button or Link** | 👆 | Simulate a click on a page element | Yes — enter the element ID (e.g. `#submit-btn`) |
+| **Focus an Input** | 🎯 | Move cursor to a specific input field | Yes — enter the input ID (e.g. `#search-input`) |
+| **Toggle CSS Class** | 🎨 | Toggle a class on the page body | Yes — enter the class name (e.g. `dark-mode`) |
+| **Copy Text to Clipboard** | 📋 | Copy text or the current page URL | Optional — leave empty to copy current URL |
+| **Go Back** | ◀️ | Navigate to the previous page | No |
+| **Go Forward** | ▶️ | Navigate to the next page | No |
+| **Reload Page** | 🔄 | Refresh the current page | No |
+| **Print Page** | 🖨️ | Open the browser print dialog | No |
+| **Toggle Fullscreen** | ⛶ | Enter or exit fullscreen mode | No |
+
+> 🔒 **Safety note:** These actions are sandboxed templates — you can **never** run arbitrary JavaScript code. This protects both you and the website from security risks. The actions only use safe browser APIs (navigation, scrolling, clicking visible elements, clipboard).
 
 ### Editing or Deleting Shortcuts
 
