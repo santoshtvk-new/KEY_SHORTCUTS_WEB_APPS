@@ -616,3 +616,10 @@ CommandCuts tracks **~80 reserved shortcuts** across Windows, macOS, Chrome, Fir
 ## License
 
 MIT — free to use in personal and commercial projects.
+
+
+## 🌐 Website
+
+- 🔗 Visit: [pynfinity](https://pynfinity.com)
+- 🧑‍💻 Author: [santoshtvk](https://www.linkedin.com/in/santoshtvk/)
+
